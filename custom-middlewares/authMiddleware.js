@@ -9,18 +9,15 @@ const authenticate = async (req, res, next) => {
         const authenticatedUser = await User.findById(userId);
         
         if (!authenticatedUser) {
-            res.redirect(`${process.env.API_VERSION}/views/loginUser`);
+            res.render(`./login/loginForm`, {title:" You are redirected as you are not Authenticated", user:undefined}); // the root view folder is views
         } else {
             req.user = authenticatedUser;
             next();
         }
     } catch {
-        // normally you would send an invalid request error
-        //res.status(401).json({
-        // error: new Error('Invalid request!')          
-        // });
         // however, we need to redirect to the login page in this case as we have a UI implemented in production
-         res.redirect(`${process.env.API_VERSION}/views/loginUser`);
+        res.render(`./login/loginForm`, {title:" You are redirected as you are not Authenticated", user:undefined}); // the root view folder is views
+
     }
 };
 

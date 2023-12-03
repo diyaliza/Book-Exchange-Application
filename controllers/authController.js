@@ -2,31 +2,25 @@ const crypto = require('crypto');
 const User = require('./../models/userModel');
 const jwt = require('jsonwebtoken');
 
-
-// exports.signup = async (req, res, next) => {
-//   const { name, email, password, passwordConfirm } = req.body;
-//   const newUser = await User.create({
-//     name: name,
-//     email: email,
-//     password: password,
-//     passwordConfirm: passwordConfirm
-//   });
-//   createSendToken(newUser, 201, res);
-// };
-
-//OR
 // since the values are same as the properties names
-// this style is called object destructuring ans it is prefered
+// this style is called object destructuring and it is preferred
 exports.signup = async (req, res, next) => {
   const { name, email, password, passwordConfirmation } = req.body;
-  const newUser = await User.create({
-    name,
-    email,
-    password,
-    passwordConfirmation
-  });
-  //and then send the token
-  createSendToken(newUser, 201, res);// this is called Authorization
+  try {
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      passwordConfirmation
+    });
+    //and then send the token
+    createSendToken(newUser, 201, res);// this is called Authorization
+  } catch (error) {
+    res.status(400).render('./login/registerForm', {
+      errorCode: 400,
+      errorMessage: error.message
+    });
+  }
 };
 
 const createSendToken = (user, statusCode, res) => {
@@ -43,25 +37,21 @@ const createSendToken = (user, statusCode, res) => {
 
   // Remove password from output
   user.password = undefined; // very important
-
-  // res.status(statusCode).json({
-  //   status: 'success',
-  //   token,
-  //   data: {
-  //     user
-  //   }
-  // });
-  res.render( 'authorizationSuccess', { user: user, token: token , api_version: process.env.API_VERSION});
+  res.render( './login/authorizationSuccess', { user: user, token: token});
 };
 // sign token
 const signToken = id => {
   // document reference https://www.npmjs.com/package/jsonwebtoken
-  const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
-    //noTimestamp:true,
-    expiresIn: process.env.JWT_EXPIRES_IN
-  });
-  console.log;
-  return jwtToken;
+  try {
+    const jwtToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+      //noTimestamp:true,
+      expiresIn: process.env.JWT_EXPIRES_IN
+    });
+    console.log;
+    return jwtToken;
+  } catch (error) {
+     res.render('./users/login', { title: 'Login', user: undefined, token: undefined });
+  }
 };
 
 exports.login = async (req, res, next) => {
@@ -69,11 +59,12 @@ exports.login = async (req, res, next) => {
   // 1) Check if email and password exist
   if (!email || !password) {
 
-    res.status(401).render('appError', {
+    // the get verb does not send the body. so there is no body object
+    res.status(401).render('./login/loginForm', { 
       errorCode: 401,
-      errorMessage: 'Please provide email and password!',
-      api_version: process.env.API_VERSION
+      errorMessage: 'Please provide email and password!'
     });
+    return
    
   }
   // 2) Check if user exists && password is correct
@@ -82,15 +73,21 @@ exports.login = async (req, res, next) => {
   if (!user || !(await user.isPasswordMatch(password, user.password))) {
     res.status(401).render('appError', {
       errorCode: 401,
-      errorMessage: 'Incorrect email and password!',
-      api_version: process.env.API_VERSION
+      errorMessage: 'Incorrect email and password!'
     });
   }
 
   // 3) If everything ok, send token to client
-  createSendToken(user, 200, res);
+  try {
+    createSendToken(user, 200, res);
+  }catch(error){
+    res.status(401).render('./login/loginForm', {
+      errorCode: 401,
+      errorMessage: 'Incorrect email and password!'
+    });
+  }
+  
 };
-
 
 exports.protect = async (req, res, next) => {
   // 1) Getting token and check of it's there
@@ -105,8 +102,7 @@ exports.protect = async (req, res, next) => {
   if (!token) {
     res.status(401).render('appError', {
       errorCode: 401,
-      errorMessage: 'You are not logged in! Please log in to get access',
-      api_version: process.env.API_VERSION
+      errorMessage: 'You are not logged in! Please log in to get access'
     });
   }
 
@@ -119,44 +115,25 @@ exports.protect = async (req, res, next) => {
 
     res.status(401).render('appError', {
       errorCode: 401,
-      errorMessage: 'The user belonging to this token does no longer exist',
-      api_version: process.env.API_VERSION
+      errorMessage: 'The user belonging to this token does no longer exist'
     });
   }
 
   // GRANT ACCESS TO PROTECTED ROUTE
+  // the current user information is passed to the next middleware
   req.user = currentUser;
   next();
 };
 
-exports.loginInhanced = async (req, res, next) => {
-  const { email, password } = req.body;
-  // 1) Check if email and password exist
-  if (!email || !password) {
-    res.status(400).render('appError', {
-      errorCode: 400,
-      errorMessage: 'Incorrect email or password',
-      api_version: process.env.API_VERSION
-    });
-  }
-  // 2) Check if user exists && password is correct
-  const user = await User.findOne({ email }).select('+password');
 
-  if (!user || !(await user.isPasswordMatch(password, user.password))) {
-    res.status(401).render('appError', {
-      errorCode: 401,
-      errorMessage: 'Incorrect email or password',
-      api_version: process.env.API_VERSION
-    });
-  }
-
-  // 3) If everything ok, send token to client
-  createSendToken(user, 200, res);
-
-  res.render(`${process.env.API_VERSION}/`, {
-    user:undefined
-  })
+exports.logout = (req, res) => {
+  res.clearCookie('jwt', { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+  res.render('./login/logoutSuccess', { title: 'Logout' });
 };
+
+exports.logoutForm = (req, res) => {
+  res.render('./login/logoutForm')
+}
 
 
 

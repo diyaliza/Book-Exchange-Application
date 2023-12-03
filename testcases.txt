@@ -1,0 +1,47 @@
+@token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NTMwYmJmZWNhMzI1Y2E2MTY2NjlmNiIsImlhdCI6MTcwMDAwNTUyNCwiZXhwIjoxNzAwODY5NTI0fQ.PDVtXGjHi8eiNCADjUAXmL993K80jITOrcbe5KDGvMw"
+@baseUrl = http://localhost:4000
+###
+GET http://localhost:4000/books HTTP/1.1
+Cookie: jwt={{token}}
+# In this example, @token is a custom variable that holds your actual token. Replace your_actual_token_here with the token you have.
+###
+GET http://localhost:4000/books/65530d33eca325ca616669ff
+Cookie: jwt={{token}}
+###
+POST {{baseUrl}}/books
+Content-Type: application/json
+Cookie: jwt={{token}}
+  
+{
+        "title": "Travel Diaries",
+        "author": "Wanderlust Explorer",
+        "description": "Embark on a journey around the world through these captivating travel stories.",
+        "exchangeType": "borrow",
+        "owner": "5fa12345678abcdef9012345",
+        "status": "available"
+    }
+# In this case, make sure to include the .env file in your .gitignore or equivalent to prevent committing sensitive information into version control.
+
+# For an even more secure approach, you can use system environment variables or secret management tools to handle sensitive data like tokens, especially if you're working in a team or a shared environment. These tokens should be secured and only made available to the environments that require them, such as your local development environment or a secure CI/CD pipeline.
+#send request for a specific id 
+###
+### Sample Test: Modify a book by ID
+POST http://localhost:4000/books/update/65530d33eca325ca616669ff
+Content-Type: application/json
+Cookie: jwt={{token}}
+
+{ "author": "Diya Liza Varghese" }
+
+### Sample test: put
+
+PUT http://localhost:4000/books/update/65530d33eca325ca616669ff
+Content-Type: application/json
+Cookie: jwt={{token}}
+
+{ "author": "Diya" }
+###Delete the recor
+DELETE http://localhost:4000/books/delete/65530d96eca325ca61666a0b
+Content-Type: application/json
+Cookie: jwt={{token}}
+
+

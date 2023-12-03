@@ -7,23 +7,8 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser');
 
-
-
 // start express app
 const app = express()
-app.use(bodyParser.urlencoded({ extended: false }))
-
-// parse application/json
-app.use(bodyParser.json())
-app.use(express.json()); // JSON parsing
-app.use(express.urlencoded({ extended: false })); // URL-encoded parsing
-app.use(cookieParser()); // Cookie parsing
-
-
-// 1) GLOBAL MIDDLEWARES to log the request to the console
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
-  }
 
 // Set the view engine to ejs and set the views directory
 app.set('view engine', 'ejs');
@@ -37,33 +22,49 @@ console.log('public', path.join(__dirname, 'public'));
 
 // 3) GLOBAL MIDDLEWARES // Body parser, reading data from body into req.body
 // parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
 
+// parse application/json
+app.use(bodyParser.json())
 
 // parse cookies
 app.use(cookieParser());
 
 // Create a home route
 app.get('/', (req, res) => {
-    res.render('home',
-    { 
+  const userParam = req.query.user;
+
+  // Check if the userParam is present
+  let user = undefined;
+  if (userParam) {
+      try {
+          user = JSON.parse(decodeURIComponent(userParam));
+          // Now 'user' contains the user object passed in the URL
+          console.log('User:', user);
+      } catch (error) {
+          console.error('Error parsing user object:', error);
+      }
+  }
+
+  // Render the 'home' template with the user object
+  res.render('home', {
       title: 'Dashboard',
-      user: undefined,
-      books: [],
-      api_version: process.env.API_VERSION
-    });
+      user: user,
+      books: [] // You can modify this part to include actual book data
+  });
 });
-// 4)  Start defining routes for UI and API
-const viewRouter = require('./routes/viewRoutes')
-const viewUrl = `${process.env.API_VERSION}/views`
-console.log('viewUrl', viewUrl);
-app.use(viewUrl, viewRouter);
+// // 4)  Start defining routes for UI and API
+// const viewRouter = require('./routes/viewRoutes')
+// const viewUrl = `/views`
+// console.log('viewUrl', viewUrl);
+// app.use(viewUrl, viewRouter);
 
 // 5) ROUTES API for Users
 const userRouter = require('./routes/userRoutes');
-app.use(`${process.env.API_VERSION}/users`, userRouter);
+app.use('/users', userRouter);
 
 // // 6) ROUTES API for Books
-const booksRoutes = require('./routes/bookRoutes.js');
-app.use(`${process.env.API_VERSION}/books`, booksRoutes);
+const booksRoutes = require('./routes/bookRoutes');
+app.use('/books', booksRoutes);
 
 module.exports = app;

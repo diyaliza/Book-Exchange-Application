@@ -1,3 +1,5 @@
+const fs = require('fs');
+const https = require('https');
 
 // Required for Node to read .env file
 const dotenv = require('dotenv');
@@ -32,10 +34,14 @@ mongoose
     console.log('DB connection failed!');
     console.log(err); 
   });
+const options = {
+  key:fs.readFileSync('server.key'),
+  cert:fs.readFileSync('server.cert')
+}
 
 const port = process.env.PORT || 3000;
-const server = app.listen(port, () => {
+https.createServer(options,app).listen(port,() => {
   console.log(`App running on port ${port}...`);
   console.log(`To test the IFT 458 REST App Click Or Type: http://localhost:${port}...`);
-});
+})
 
